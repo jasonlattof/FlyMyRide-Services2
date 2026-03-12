@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlyMyRide – Internal Pricing</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #07091a; color: #f0f0f0; }
+
+  header { background: linear-gradient(135deg, #0d1033 0%, #111a4a 100%); border-bottom: 3px solid #3cb54a; padding: 14px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.5); }
+  .header-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; flex-direction: column; line-height: 1; }
+  .logo-main { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #fff; text-transform: uppercase; }
+  .logo-main span { color: #3cb54a; }
+  .logo-sub { font-size: 9px; font-weight: 600; letter-spacing: 3px; color: #aab; text-transform: uppercase; margin-top: 2px; }
+  .badge { background: #3cb54a22; border: 1px solid #3cb54a66; color: #3cb54a; font-size: 10px; font-weight: 700; padding: 5px 12px; border-radius: 20px; letter-spacing: 1px; }
+
+  .size-toggle { max-width: 860px; margin: 20px auto; padding: 0 16px; }
+  .toggle-label { font-size: 11px; color: #556; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .toggle-btns { display: flex; gap: 8px; }
+  .toggle-btn { flex: 1; padding: 11px 8px; border: 1px solid #1e2456; background: #0d1033; color: #667; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toggle-btn.active { background: #3cb54a22; border-color: #3cb54a; color: #3cb54a; }
+
+  .tier-toggle { max-width: 860px; margin: 0 auto 20px; padding: 0 16px; }
+  .tier-toggle .toggle-btns { max-width: 280px; }
+
+  .section { max-width: 860px; margin: 0 auto 28px; padding: 0 16px; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #445; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #1e2456; }
+
+  .card { background: #0d1033; border: 1px solid #1e2456; border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
+  .card.open { border-color: #3cb54a55; }
+  .card-header { padding: 15px; cursor: pointer; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; user-select: none; }
+  .card-name { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .card-short { font-size: 12px; color: #667; line-height: 1.4; font-weight: 500; }
+  .card-right { text-align: right; flex-shrink: 0; }
+  .tier-prices { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 4px; }
+  .tier { display: none; flex-direction: column; align-items: center; min-width: 50px; }
+  body.show-t1 .tier:nth-child(1),
+  body.show-t2 .tier:nth-child(2),
+  body.show-t3 .tier:nth-child(3) { display: flex; }
+  .tier-label { font-size: 9px; text-transform: uppercase; color: #445; margin-bottom: 1px; font-weight: 700; }
+  .tier-price { font-size: 15px; font-weight: 900; color: #3cb54a; }
+  .chevron { color: #2a3060; font-size: 16px; transition: transform 0.25s; display: block; text-align: right; margin-top: 2px; }
+  .card.open .chevron { transform: rotate(180deg); color: #3cb54a; }
+
+  .card-body { display: none; padding: 0 15px 15px; border-top: 1px solid #1a2050; }
+  .card.open .card-body { display: block; }
+  .card-desc { font-size: 13px; color: #778; line-height: 1.65; margin-top: 14px; }
+
+  .checklist { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .check-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+  .check-item.yes { color: #cdd; }
+  .check-item.no { color: #2a3060; }
+  .check-item.no span.label { text-decoration: line-through; color: #2a3060; }
+  .check-icon { font-size: 12px; flex-shrink: 0; }
+
+  .card-meta { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; background: #090c25; border-radius: 10px; padding: 10px 12px; }
+  .meta-item { display: flex; flex-direction: column; }
+  .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #445; margin-bottom: 2px; font-weight: 700; }
+  .meta-value { font-size: 13px; color: #aab; font-weight: 700; }
+  .disc-tag { background: #3cb54a15; border: 1px solid #3cb54a44; border-radius: 8px; padding: 8px 12px; margin-top: 12px; font-size: 12px; color: #3cb54a; font-weight: 600; }
+
+  .off-badge { background: #f59e0b22; border: 1px solid #f59e0b44; color: #f59e0b; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.5px; }
+
+  /* ADDONS */
+  .addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(min-width:560px){ .addon-grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .addon-card { background: #0d1033; border: 1px solid #1e2456; border-radius: 12px; padding: 12px; }
+  .addon-name { font-size: 12px; font-weight: 700; color: #bbc; margin-bottom: 8px; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.2px; }
+  .addon-prices { display: flex; gap: 6px; }
+  .addon-tier { flex: 1; display: none; flex-direction: column; align-items: center; }
+  body.show-t1 .addon-tier:nth-child(1),
+  body.show-t2 .addon-tier:nth-child(2),
+  body.show-t3 .addon-tier:nth-child(3) { display: flex; }
+  .addon-tier .tier-label { font-size: 9px; color: #445; font-weight: 700; }
+  .addon-tier .tier-price { font-size: 13px; font-weight: 800; color: #3cb54a; }
+
+  /* ADJUSTMENTS */
+  .adj-row { background: #0d1033; border: 1px solid #161d45; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .adj-name { font-size: 13px; color: #bbc; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.3px; }
+  .adj-desc { font-size: 11px; color: #445; margin-top: 3px; line-height: 1.4; }
+  .adj-prices { display: flex; gap: 6px; flex-shrink: 0; }
+  .adj-tier { display: none; flex-direction: column; align-items: center; min-width: 38px; }
+  body.show-t1 .adj-tier:nth-child(1),
+  body.show-t2 .adj-tier:nth-child(2),
+  body.show-t3 .adj-tier:nth-child(3) { display: flex; }
+  .adj-tier .tier-label { font-size: 9px; color: #445; font-weight: 700; }
+  .adj-tier .tier-price { font-size: 13px; font-weight: 800; color: #f59e0b; }
+
+  .sub-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #334; margin: 16px 0 8px; border-bottom: 1px solid #1a2050; padding-bottom: 6px; font-weight: 700; }
+
+  .star { color: #3cb54a; }
+  .pb { height: 48px; }
+
+  /* Collapsible sections */
+  .section-toggle { cursor: pointer; }
+  .section-toggle .section-title::after { display: none; }
+  .section-chevron { color: #2a3060; font-size: 14px; transition: transform 0.25s; flex-shrink: 0; margin-left: auto; }
+  .section-toggle.open .section-chevron { transform: rotate(180deg); color: #3cb54a; }
+  .section-content { display: none; }
+  .section-toggle.open + .section-content { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-main">Fly<span>My</span>Ride</div>
+      <div class="logo-sub">Mobile Detailing</div>
+    </div>
+    <div class="badge">⚡ INTERNAL USE</div>
+  </div>
+</header>
+
+<div class="size-toggle">
+  <div class="toggle-label">Vehicle Size</div>
+  <div class="toggle-btns">
+    <div class="toggle-btn active" onclick="setSize(0,this)">Car &amp; Compact SUV</div>
+    <div class="toggle-btn" onclick="setSize(1,this)">Midsized SUV &amp; Larger</div>
+  </div>
+</div>
+
+<div class="tier-toggle">
+  <div class="toggle-label">Vehicle Tier</div>
+  <div class="toggle-btns">
+    <div class="toggle-btn active" onclick="setTier(1,this)">T1</div>
+    <div class="toggle-btn" onclick="setTier(2,this)">T2</div>
+    <div class="toggle-btn" onclick="setTier(3,this)">T3</div>
+  </div>
+</div>
+
+<!-- ===== PACKAGES ===== -->
+<div class="section">
+  <div class="section-title">Packages</div>
+
+  <!-- MAINTENANCE -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Fly Maintenance Detail</div>
+        <div class="card-short">Routine upkeep — vehicles serviced within last 60 days</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$179" data-l="$229">$179</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$199" data-l="$249">$199</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$249" data-l="$299">$249</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Exclusive to vehicles serviced within the last 60 days or in extremely good condition. Precision hand wash, deep-cleaning of wheels, tires, and wheel wells, spray sealant on paint, interior vacuum and surface wipe-down.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Interior Steam</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">High Gloss Spray Wax</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Polymer Sealant</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Machine Polish</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic Coating</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="1.5 – 2 hrs" data-l="2 – 2.5 hrs">1.5 – 2 hrs</div></div>
+        <div class="meta-item"><div class="meta-label">Est. Minutes</div><div class="meta-value d" data-s="60 – 120 min" data-l="120 – 150 min">60 – 120 min</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $25 off</div>
+    </div>
+  </div>
+
+  <!-- INTERIOR -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Fly Interior Rejuvenation</div>
+        <div class="card-short">Full interior deep-clean + standard exterior hand wash</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$249" data-l="$349">$249</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$299" data-l="$399">$299</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$349" data-l="$449">$349</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Seats, carpets, and interior surfaces deep cleaned using steam and extraction, conditioned where appropriate. Exterior receives full wash. Best when the inside is the priority — spills, kids, pets.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Steam</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">High Gloss Spray Wax</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Polymer Sealant</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Machine Polish</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic Coating</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="2.5 – 3 hrs" data-l="3 – 4 hrs">2.5 – 3 hrs</div></div>
+        <div class="meta-item"><div class="meta-label">Est. Minutes</div><div class="meta-value d" data-s="150 – 210 min" data-l="180 – 240 min">150 – 210 min</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $50 off</div>
+    </div>
+  </div>
+
+  <!-- EXTERIOR -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Fly Exterior Rejuvenation</div>
+        <div class="card-short">Deep exterior paint restoration + standard interior tidy</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$249" data-l="$349">$249</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$299" data-l="$399">$299</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$349" data-l="$449">$349</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Exterior washed, decontaminated, and lightly polished to restore gloss and smoothness, then protected for easier future washing. Interior vacuumed and wiped down. Best when vehicle looks dull, rough, or weathered.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Interior Steam</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">High Gloss Spray Wax</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Polymer Sealant</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Machine Polish</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic Coating</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="2.5 – 3 hrs" data-l="3 – 3.5 hrs">2.5 – 3 hrs</div></div>
+        <div class="meta-item"><div class="meta-label">Est. Minutes</div><div class="meta-value d" data-s="150 – 210 min" data-l="180 – 210 min">150 – 210 min</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $50 off</div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Fly Signature Detail <span class="star">★</span></div>
+        <div class="card-short">Total transformation — full interior + full exterior (Recommended First Visit)</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$449" data-l="$549">$449</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$499" data-l="$599">$499</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$549" data-l="$649">$549</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Thorough service inside and out. Interior deep cleaned with steam and extraction. Exterior decontaminated, lightly polished, and protected to restore gloss and finish. Ideal before ceramic coating.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Steam</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">High Gloss Spray Wax</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Polymer Sealant</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Machine Polish</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic Coating</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="3.5 – 4 hrs" data-l="4.25 – 5 hrs">3.5 – 4 hrs</div></div>
+        <div class="meta-item"><div class="meta-label">Est. Minutes</div><div class="meta-value d" data-s="210 – 300 min" data-l="255 – 300 min">210 – 300 min</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $50 off</div>
+    </div>
+  </div>
+
+  <!-- CERAMIC SILVER -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Ceramic Silver Package (1-Year)</div>
+        <div class="card-short">1-Year protection. High-gloss hydrophobic finish.</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$599" data-l="$799">$599</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$699" data-l="$899">$699</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$799" data-l="$999">$799</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Locks in detail results with a durable ceramic layer. Enhances gloss, intense water beading, repels road grime. 1 year of continuous protection. Full prep included.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Interior Steam</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Machine Polish</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Paint</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic – Glass</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic – Wheels</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic – Trim</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="3.5 – 4 hrs" data-l="4.25 – 5 hrs">3.5 – 4 hrs</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CERAMIC GOLD -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Ceramic Gold Package (4-Year)</div>
+        <div class="card-short">4-Year Registered Warranty. XPEL Fusion Premium + Carfax.</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$799" data-l="$999">$799</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$999" data-l="$1,199">$999</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$1,199" data-l="$1,399">$1,199</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Deep gloss and hydrophobic barrier against UV rays and environmental fallout. 4 years of documented protection for paint and glass backed by XPEL Warranty and Carfax registration.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Interior Steam</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Machine Polish</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Paint</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Glass</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic – Wheels</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Ceramic – Trim</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="4.5 – 5.5 hrs" data-l="5.5 – 6.5 hrs">4.5 – 5.5 hrs</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $100 off</div>
+    </div>
+  </div>
+
+  <!-- CERAMIC PLATINUM -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Ceramic Platinum Package (8-Year)</div>
+        <div class="card-short">8-Year Warranty. XPEL Fusion Premium Plus "Ultra-Shield" + Carfax.</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$999" data-l="$1,199">$999</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$1,299" data-l="$1,499">$1,299</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$1,599" data-l="$1,799">$1,599</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">Highest level of defense. XPEL Fusion Premium Plus applied to paint, glass, wheels, and trim. 8 years documented protection with National Warranty and Carfax registration.</div>
+      <div class="checklist">
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Interior Vacuum &amp; Wipe Down</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Interior Steam</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Shampoo &amp; Extraction</span></div>
+        <div class="check-item no"><span class="check-icon">◻</span><span class="label">Leather Condition</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Exterior Hand Wash</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Wheels &amp; Tires</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Clay Bar &amp; IronX</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Machine Polish</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Paint</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Glass</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Wheels</span></div>
+        <div class="check-item yes"><span class="check-icon">✅</span><span class="label">Ceramic – Trim</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value d" data-s="5 – 6 hrs" data-l="6 – 7 hrs">5 – 6 hrs</div></div>
+      </div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $100 off</div>
+    </div>
+  </div>
+
+  <!-- COATING MAINTENANCE -->
+  <div class="card" onclick="toggle(this)">
+    <div class="card-header">
+      <div>
+        <div class="card-name">Signature Coating Maintenance <span class="off-badge">OFF MENU</span></div>
+        <div class="card-short">Seasonal maintenance for ceramic-coated vehicles</div>
+      </div>
+      <div class="card-right">
+        <div class="tier-prices">
+          <div class="tier"><div class="tier-label">T1</div><div class="tier-price p" data-s="$349" data-l="$449">$349</div></div>
+          <div class="tier"><div class="tier-label">T2</div><div class="tier-price p" data-s="$399" data-l="$499">$399</div></div>
+          <div class="tier"><div class="tier-label">T3</div><div class="tier-price p" data-s="$449" data-l="$559">$449</div></div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-desc">For vehicles with existing ceramic coating. Wash, decontaminate, and refresh coating using XPEL-specific products — restoring slickness, gloss, and water-beading. Full interior detail included. Recommended 1–2x per year.</div>
+      <div class="disc-tag">💰 Multi-vehicle discount: $50 off</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD-ONS ===== -->
+<div class="section">
+  <div class="section-toggle" onclick="this.classList.toggle('open')">
+    <div class="section-title">Add-Ons <span class="section-chevron">⌄</span></div>
+  </div>
+  <div class="section-content">
+  <div class="sub-title">Exterior Protection & Appearance</div>
+  <div class="addon-grid">
+    <div class="addon-card"><div class="addon-name">Express Hand Wax (Gyeon)</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$49</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$59</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$69</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">XPEL FUSION Glass Protection</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$99</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$129</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$159</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">XPEL FUSION Wheel Ceramic</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$299</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$299</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$299</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Headlight Restoration</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$79</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$99</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$119</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Trim Restoration</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$79</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$99</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$119</div></div></div></div>
+  </div>
+  <div class="sub-title">Cosmetic Correction</div>
+  <div class="addon-grid">
+    <div class="addon-card"><div class="addon-name">Scratch Removal – Spot</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$79</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$99</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$129</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Paint Transfer Removal</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$59</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$79</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$99</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Paint Correction – 1 Step</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$199</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$199</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$199</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Paint Correction – 2 Step</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$399</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$399</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$399</div></div></div></div>
+  </div>
+  <div class="sub-title">Interior Care</div>
+  <div class="addon-grid">
+    <div class="addon-card"><div class="addon-name">Interior Protection (XPEL Fusion)</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$249</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$299</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$349</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Odor Neutralizer – Ozone</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$39</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$49</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$59</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Stain Spot Treatment</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$29</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$39</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$49</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Child Seat Cleaning</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$25</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$25</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$25</div></div></div></div>
+  </div>
+  <div class="sub-title">Deep Cleaning & Seasonal</div>
+  <div class="addon-grid">
+    <div class="addon-card"><div class="addon-name">Engine Bay Cleaning</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$50</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$50</div></div></div></div>
+    <div class="addon-card"><div class="addon-name">Undercarriage Salt Flush</div><div class="addon-prices"><div class="addon-tier"><div class="tier-label">T1</div><div class="tier-price">$49</div></div><div class="addon-tier"><div class="tier-label">T2</div><div class="tier-price">$69</div></div><div class="addon-tier"><div class="tier-label">T3</div><div class="tier-price">$89</div></div></div></div>
+  </div>
+  </div>
+</div>
+
+<!-- ===== TECH ADJUSTMENTS ===== -->
+<div class="section">
+  <div class="section-toggle" onclick="this.classList.toggle('open')">
+    <div class="section-title">Tech Adjustments <span class="off-badge">NOT IN BOOKING ENGINE</span> <span class="section-chevron">⌄</span></div>
+  </div>
+  <div class="section-content">
+  <div class="sub-title">Exterior Condition</div>
+  <div class="adj-row"><div><div class="adj-name">Hard Water Spot Removal</div><div class="adj-desc">Mineral deposits requiring specialized treatment. No polishing.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$79</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$99</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$129</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Heavy Bug Build-Up</div><div class="adj-desc">Front-end contamination requiring extended pre-treatment.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Sap / Tree Fallout Removal</div><div class="adj-desc">Additional labor required.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$50</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$75</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$100</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Paint Overspray Removal</div><div class="adj-desc">Clay and solvent treatment required.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$80</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$110</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$140</div></div></div></div>
+  <div class="sub-title">Wheels & Lower Vehicle</div>
+  <div class="adj-row"><div><div class="adj-name">Wheel Barrel Deep Cleaning</div><div class="adj-desc">Brake dust buildup inside wheels requiring hand agitation.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Wheel Well Deep Cleaning</div><div class="adj-desc">Heavy buildup inside wheel wells and liners.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Undercarriage Heavy Cleaning</div><div class="adj-desc">Thick buildup beyond standard flush.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$90</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$120</div></div></div></div>
+  <div class="sub-title">Interior Condition</div>
+  <div class="adj-row"><div><div class="adj-name">Heavy Soil / Mud Cleanup</div><div class="adj-desc">Excessive dirt requiring extended cleaning time.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Sand Removal (Beach / Sports)</div><div class="adj-desc">Large amounts of sand embedded in carpets and seating.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Severe Pet Hair</div><div class="adj-desc">Heavy pet hair beyond standard removal.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$50</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$75</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$100</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Excess Cleanup (Non-Hazardous)</div><div class="adj-desc">Food spills, organic material requiring sanitizing and extraction.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$90</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$120</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Interior Spill Extraction (Large Area)</div><div class="adj-desc">Large liquid spill saturation in seats or carpets.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$80</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$110</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$140</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Seat Shampoo (Single Seat)</div><div class="adj-desc">Targeted deep cleaning of one heavily soiled seat.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Door Jamb Deep Cleaning</div><div class="adj-desc">Excessive grease or buildup inside jambs.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$30</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$45</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$60</div></div></div></div>
+  <div class="sub-title">Vehicle Size & Service Level</div>
+  <div class="adj-row"><div><div class="adj-name">Service Size Adjustment</div><div class="adj-desc">Vehicle larger than selected size category.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$40</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$60</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$80</div></div></div></div>
+  <div class="adj-row"><div><div class="adj-name">Excessive Neglect Condition</div><div class="adj-desc">Vehicle requires Full Reset level labor.</div></div><div class="adj-prices"><div class="adj-tier"><div class="tier-label">T1</div><div class="tier-price">$100</div></div><div class="adj-tier"><div class="tier-label">T2</div><div class="tier-price">$150</div></div><div class="adj-tier"><div class="tier-label">T3</div><div class="tier-price">$200</div></div></div></div>
+  </div>
+</div>
+
+<div class="pb"></div>
+
+<script>
+  document.body.classList.add('show-t1');
+  function toggle(card) { card.classList.toggle('open'); }
+  function setSize(idx, btn) {
+    document.querySelectorAll('.size-toggle .toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tier-price.p').forEach(el => {
+      el.textContent = idx === 0 ? el.dataset.s : el.dataset.l;
+    });
+    document.querySelectorAll('.meta-value.d').forEach(el => {
+      el.textContent = idx === 0 ? el.dataset.s : el.dataset.l;
+    });
+  }
+  function setTier(tier, btn) {
+    document.querySelectorAll('.tier-toggle .toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.body.classList.remove('show-t1', 'show-t2', 'show-t3');
+    document.body.classList.add('show-t' + tier);
+  }
+</script>
+</body>
+</html>
